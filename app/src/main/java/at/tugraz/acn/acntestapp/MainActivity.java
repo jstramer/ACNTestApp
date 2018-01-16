@@ -29,14 +29,17 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback{
     private static final String TAG = "ACN";
+    private static final int PHONE_REQUEST_CODE = 123;
 
     private Spinner s_cipherSuites;
     private EditText et_server;
     private Button b_startHandshake;
     private Button b_sendIMEI;
+    private Button b_sendIMSI;
     private Button b_sendNumber;
+    private Button b_sendKeywords;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +50,17 @@ public class MainActivity extends AppCompatActivity {
         s_cipherSuites = (Spinner) findViewById(R.id.s_cipherSuites);
         b_startHandshake = (Button) findViewById(R.id.b_startHandshake);
         b_sendIMEI = (Button) findViewById(R.id.b_sendIMEI);
+        b_sendIMSI = (Button) findViewById(R.id.b_sendIMSI);
         b_sendNumber = (Button) findViewById(R.id.b_sendNumber);
+        b_sendKeywords = (Button) findViewById(R.id.b_sendKeywords);
 
         // get permission to extract imei and number (api level > 23)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, 123);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE}, PHONE_REQUEST_CODE);
+        } else {
+            Log.d(TAG, "IMEI = " + getIMEI());
+            Log.d(TAG, "IMSI = " + getIMSI());
+            Log.d(TAG, "Number = " + getPhoneNumber());
         }
 
         fillCipherSuites();
@@ -95,39 +104,60 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Log.i(TAG, "b_sendIMEI clicked");
-                new AsyncTask<Void, Void, Void>() {
 
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        HashMap<String, String> parameters = new HashMap<>();
-                        parameters.put("IMEI", getIMEI());
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("IMEI", getIMEI());
 
-                        sendHttpRequest(parameters);
+                sendHttpRequest(parameters);
+            }
+        });
 
-                        return null;
-                    }
-                }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        b_sendIMSI.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "b_sendIMSI clicked");
+
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("IMSI", getIMSI());
+
+                sendHttpRequest(parameters);
             }
         });
 
         b_sendNumber.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.i(TAG, "b_sendIMEI clicked");
-                new AsyncTask<Void, Void, Void>() {
+                Log.i(TAG, "b_sendNumber clicked");
 
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        HashMap<String, String> parameters = new HashMap<>();
-                        parameters.put("Number", getPhoneNumber());
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("Number", getPhoneNumber());
 
-                        sendHttpRequest(parameters);
-
-                        return null;
-                    }
-                }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                sendHttpRequest(parameters);
             }
         });
+
+        b_sendKeywords.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "b_sendKeywords clicked");
+
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("Keywords", et_server.getText().toString());
+
+                sendHttpRequest(parameters);
+            }
+        });
+    }
+
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+    {
+        if (requestCode == PHONE_REQUEST_CODE) {
+            Log.i(TAG, "READ_PHONE_STATE was granted: " + (grantResults[0] == PackageManager.PERMISSION_GRANTED));
+
+            Log.d(TAG, "IMEI = " + getIMEI());
+            Log.d(TAG, "IMSI = " + getIMSI());
+            Log.d(TAG, "Number = " + getPhoneNumber());
+        }
     }
 
     private void fillCipherSuites() {
@@ -147,65 +177,73 @@ public class MainActivity extends AppCompatActivity {
         s_cipherSuites.setAdapter(adapter);
     }
 
-    private void sendHttpRequest(HashMap<String, String> parameters) {
-        StringBuilder builder = new StringBuilder("");
-        for (Map.Entry<String, String> entry : parameters.entrySet())
-        {
-            if (builder.length() > 0)
-                builder.append("&");
+    private void sendHttpRequest(final HashMap<String, String> parameters) {
+        new AsyncTask<Void, Void, Void>() {
 
-            builder.append(entry.getKey());
-            builder.append("=");
-            builder.append(entry.getValue());
-        }
-
-        String params = builder.toString();
-
-        // 0 = GET parameters
-        // 1 = Header
-        // 2 = POST parameters
-        int random = ThreadLocalRandom.current().nextInt(0, 3);
-
-        Log.i(TAG, "Sending HTTP Request - Using " + ((random == 0) ? "GET" : ((random == 1) ? "Headers" : "POST")));
-
-        String urlString = "http://www.december.com/html/demo/hello.html" +
-                ((random == 0) ? "?" + params : "");
-
-        try {
-            URL url = new URL(urlString);
-            HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setUseCaches(false);
-            urlConnection.setRequestMethod((random == 2) ? "POST" : "GET");
-
-            if (random == 1) {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                StringBuilder builder = new StringBuilder("");
                 for (Map.Entry<String, String> entry : parameters.entrySet())
                 {
-                    urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
+                    if (builder.length() > 0)
+                        builder.append("&");
+
+                    builder.append(entry.getKey());
+                    builder.append("=");
+                    builder.append(entry.getValue());
                 }
-            }
 
-            if (random == 2) {
-                DataOutputStream wr = new DataOutputStream(urlConnection.getOutputStream());
-                wr.write(params.getBytes(StandardCharsets.UTF_8));
-            }
+                String params = builder.toString();
 
-            Log.i(TAG, "Response Code: " + urlConnection.getResponseCode());
+                // 0 = GET parameters
+                // 1 = Header
+                // 2 = POST parameters
+                int random = ThreadLocalRandom.current().nextInt(0, 3);
 
-        } catch (Exception e) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(MainActivity.this);
-                    dlgAlert.setMessage("An exception occurred!");
-                    dlgAlert.setTitle("HTTP Error");
-                    dlgAlert.setPositiveButton("OK", null);
-                    dlgAlert.setCancelable(true);
-                    dlgAlert.create().show();
+                Log.i(TAG, "Sending HTTP Request - Using " + ((random == 0) ? "GET" : ((random == 1) ? "Headers" : "POST")));
+
+                String urlString = "http://www.december.com/html/demo/hello.html" +
+                        ((random == 0) ? "?" + params : "");
+
+                try {
+                    URL url = new URL(urlString);
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setUseCaches(false);
+                    urlConnection.setRequestMethod((random == 2) ? "POST" : "GET");
+
+                    if (random == 1) {
+                        for (Map.Entry<String, String> entry : parameters.entrySet())
+                        {
+                            urlConnection.setRequestProperty(entry.getKey(), entry.getValue());
+                        }
+                    }
+
+                    if (random == 2) {
+                        DataOutputStream wr = new DataOutputStream(urlConnection.getOutputStream());
+                        wr.write(params.getBytes(StandardCharsets.UTF_8));
+                    }
+
+                    Log.i(TAG, "Response Code: " + urlConnection.getResponseCode());
+
+                } catch (Exception e) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(MainActivity.this);
+                            dlgAlert.setMessage("An exception occurred!");
+                            dlgAlert.setTitle("HTTP Error");
+                            dlgAlert.setPositiveButton("OK", null);
+                            dlgAlert.setCancelable(true);
+                            dlgAlert.create().show();
+                        }
+                    });
+
+                    e.printStackTrace();
                 }
-            });
 
-            e.printStackTrace();
-        }
+                return null;
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     public String getIMEI() {
@@ -222,14 +260,30 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Permission READ_PHONE_STATE is missing");
         }
 
-        if (imei.compareToIgnoreCase("000000000000000") == 0) // emulator = random imei
+        if (imei.length() != 15 || imei.compareToIgnoreCase("000000000000000") == 0) // error or emulator = random imei
             imei = "490154203237518";
 
         return imei;
     }
 
+    public String getIMSI() {
+        String imsi = "";
+
+        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+            TelephonyManager tm = (TelephonyManager) MainActivity.this.getSystemService(MainActivity.this.TELEPHONY_SERVICE);
+            imsi = tm.getSubscriberId();
+        } else {
+            Log.e(TAG, "Permission READ_PHONE_STATE is missing");
+        }
+
+        if (getIMEI().compareTo("490154203237518") == 0 || imsi.length() < 14 || imsi.length() > 15 || imsi == null || !imsi.matches("^\\d+$"))  // error or emulator = use random IMSI
+            imsi = "23203974564247";
+
+        return imsi;
+    }
+
     public String getPhoneNumber() {
-        if (getIMEI().compareTo("490154203237518") == 0) return "06805619653"; // emulator = use random phone number
+        if (getIMEI().compareTo("490154203237518") == 0) return "06805619653";
 
         String number = "";
 
@@ -240,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Permission READ_PHONE_STATE is missing");
         }
 
-        if (number == null || !number.matches("^\\d+$"))
+        if (getIMEI().compareTo("490154203237518") == 0 || number == null || !number.matches("^\\d+$"))  // error or emulator = use random phone number
             number = "06805619653";
 
         return number;
