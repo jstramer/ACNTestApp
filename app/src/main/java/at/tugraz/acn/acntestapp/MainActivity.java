@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 
 import java.io.DataOutputStream;
@@ -55,6 +56,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         b_sendNumber = (Button) findViewById(R.id.b_sendNumber);
         et_keywords = (EditText) findViewById(R.id.et_keywords);
         b_sendKeywords = (Button) findViewById(R.id.b_sendKeywords);
+
+        // do not give focus to edittext at the start
+        b_sendKeywords.setFocusable(true);
+        b_sendKeywords.setFocusableInTouchMode(true);
+        b_sendKeywords.requestFocus();
 
         // get permission to extract imei and number (api level > 23)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
@@ -149,6 +155,15 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 sendHttpRequest(parameters);
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        b_sendKeywords.setFocusable(true);
+        b_sendKeywords.setFocusableInTouchMode(true);
+        b_sendKeywords.requestFocus();
     }
 
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
