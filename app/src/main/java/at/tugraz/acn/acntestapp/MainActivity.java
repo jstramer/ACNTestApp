@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private Button b_sendIMEI;
     private Button b_sendIMSI;
     private Button b_sendNumber;
+    private EditText et_keywords;
     private Button b_sendKeywords;
 
     @Override
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         b_sendIMEI = (Button) findViewById(R.id.b_sendIMEI);
         b_sendIMSI = (Button) findViewById(R.id.b_sendIMSI);
         b_sendNumber = (Button) findViewById(R.id.b_sendNumber);
+        et_keywords = (EditText) findViewById(R.id.et_keywords);
         b_sendKeywords = (Button) findViewById(R.id.b_sendKeywords);
 
         // get permission to extract imei and number (api level > 23)
@@ -142,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 Log.i(TAG, "b_sendKeywords clicked");
 
                 HashMap<String, String> parameters = new HashMap<>();
-                parameters.put("Keywords", et_server.getText().toString());
+                parameters.put("Keywords", et_keywords.getText().toString());
 
                 sendHttpRequest(parameters);
             }
