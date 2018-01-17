@@ -34,12 +34,22 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private static final String TAG = "ACN";
     private static final int PHONE_REQUEST_CODE = 123;
 
+    private final String[] creditCards = new String[] {
+            "371449635398431",
+            "30569309025904",
+            "6011111111111117",
+            "3530111333300000",
+            "5555555555554444",
+            "4111111111111111"
+    };
+
     private Spinner s_cipherSuites;
     private EditText et_server;
     private Button b_startHandshake;
     private Button b_sendIMEI;
     private Button b_sendIMSI;
     private Button b_sendNumber;
+    private Button b_sendCreditCard;
     private EditText et_keywords;
     private Button b_sendKeywords;
 
@@ -54,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         b_sendIMEI = (Button) findViewById(R.id.b_sendIMEI);
         b_sendIMSI = (Button) findViewById(R.id.b_sendIMSI);
         b_sendNumber = (Button) findViewById(R.id.b_sendNumber);
+        b_sendCreditCard = (Button) findViewById(R.id.b_sendCreditCard);
         et_keywords = (EditText) findViewById(R.id.et_keywords);
         b_sendKeywords = (Button) findViewById(R.id.b_sendKeywords);
 
@@ -139,6 +150,18 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
                 HashMap<String, String> parameters = new HashMap<>();
                 parameters.put("Number", getPhoneNumber());
+
+                sendHttpRequest(parameters);
+            }
+        });
+
+        b_sendCreditCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "b_sendCreditCard clicked");
+
+                HashMap<String, String> parameters = new HashMap<>();
+                parameters.put("CreditCard", getCreditCard());
 
                 sendHttpRequest(parameters);
             }
@@ -278,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
 
         if (imei.length() != 15 || imei.compareToIgnoreCase("000000000000000") == 0) // error or emulator = random imei
-            imei = "490154203237518";
+            imei = "101341810158218";
 
         return imei;
     }
@@ -293,15 +316,13 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             Log.e(TAG, "Permission READ_PHONE_STATE is missing");
         }
 
-        if (getIMEI().compareTo("490154203237518") == 0 || imsi == null || imsi.length() < 14 || imsi.length() > 15 || !imsi.matches("^\\d+$"))  // error or emulator = use random IMSI
+        if (getIMEI().compareTo("101341810158218") == 0 || imsi == null || imsi.length() < 14 || imsi.length() > 15 || !imsi.matches("^\\d+$"))  // error or emulator = use random IMSI
             imsi = "23203974564247";
 
         return imsi;
     }
 
     public String getPhoneNumber() {
-        if (getIMEI().compareTo("490154203237518") == 0) return "06805619653";
-
         String number = "";
 
         if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
@@ -311,9 +332,14 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             Log.e(TAG, "Permission READ_PHONE_STATE is missing");
         }
 
-        if (getIMEI().compareTo("490154203237518") == 0 || number == null || !number.matches("^\\d+$"))  // error or emulator = use random phone number
+        if (getIMEI().compareTo("101341810158218") == 0 || number == null || !number.matches("^\\d+$"))  // error or emulator = use random phone number
             number = "06805619653";
 
         return number;
+    }
+
+    public String getCreditCard() {
+        int random = ThreadLocalRandom.current().nextInt(0, creditCards.length);
+        return creditCards[random];
     }
 }
