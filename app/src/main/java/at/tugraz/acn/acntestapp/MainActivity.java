@@ -293,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             Log.e(TAG, "Permission READ_PHONE_STATE is missing");
         }
 
-        if (getIMEI().compareTo("490154203237518") == 0 || imsi.length() < 14 || imsi.length() > 15 || imsi == null || !imsi.matches("^\\d+$"))  // error or emulator = use random IMSI
+        if (getIMEI().compareTo("490154203237518") == 0 || imsi == null || imsi.length() < 14 || imsi.length() > 15 || !imsi.matches("^\\d+$"))  // error or emulator = use random IMSI
             imsi = "23203974564247";
 
         return imsi;
